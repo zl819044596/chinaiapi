@@ -360,6 +360,10 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 	}
 
 	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem 充值成功 trade_no=%s creem_order_id=%s quota=%d money=%.2f client_ip=%s", referenceId, event.Object.Order.Id, topUp.Amount, topUp.Money, c.ClientIP()))
+
+	// 根据充值金额自动分配用户分组
+	autoAssignGroup(topUp.UserId, topUp.Money)
+
 	c.Status(http.StatusOK)
 }
 
@@ -459,4 +463,33 @@ func genCreemLink(ctx context.Context, referenceId string, product *CreemProduct
 
 	logger.LogInfo(ctx, fmt.Sprintf("Creem 支付链接创建成功 trade_no=%s response_id=%s checkout_url=%q", referenceId, checkoutResp.Id, checkoutResp.CheckoutUrl))
 	return checkoutResp.CheckoutUrl, nil
+}
+
+// autoAssignGroup 根据充值金额自动分配用户分组
+func autoAssignGroup(userId int, money float64) {
+	var group string
+	switch {
+	case money >= 30:
+		group = "svip"
+	case money >= 10:
+		group = "vip"
+	default:
+		return
+	}
+
+	user, err := model.GetUserById(userId, false)
+	if err != nil {
+		logger.LogError(context.Background(), fmt.Sprintf("自动分组失败: 获取用户信息错误 user_id=%d error=%q", userId, err.Error()))
+		return
+	}
+
+	// 仅当新分组等级更高时才更新（不降级）
+	if user.Group == "default" || user.Group == "" {
+		user.Group = group
+		if err := user.Update(false); err != nil {
+			logger.LogError(context.Background(), fmt.Sprintf("自动分组失败: 更新用户分组错误 user_id=%d group=%s error=%q", userId, group, err.Error()))
+			return
+		}
+		logger.LogInfo(context.Background(), fmt.Sprintf("自动分组成功 user_id=%d group=%s money=%.2f", userId, group, money))
+	}
 }
