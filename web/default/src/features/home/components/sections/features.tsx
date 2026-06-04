@@ -21,10 +21,9 @@ import {
   Shield,
   Globe,
   Code,
-  Gauge,
   DollarSign,
-  Users,
-  Download,
+  Cpu,
+  SquareStack,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { AnimateInView } from '@/components/animate-in-view'
@@ -38,21 +37,19 @@ export function Features(_props: FeaturesProps) {
 
   const features = [
     {
-      id: 'unified',
+      id: 'models',
       num: '01',
-      title: t('Universal API Access'),
-      desc: t(
-        'One standard endpoint for all major AI models, fully compatible with OpenAI SDK'
-      ),
+      title: t('DeepSeek · Claude · Qwen'),
+      desc: t('支持 DeepSeek V4 Flash/Pro、Claude Sonnet/Haiku、通义千问 Max/Plus 等中国主流模型，一个 API 统一调用'),
       span: 'md:col-span-2',
-      icon: <Zap className='size-4 text-blue-400' />,
+      icon: <Cpu className='size-4 text-violet-400' />,
       visual: (
         <div className='mt-4 grid grid-cols-3 gap-2'>
-          {['OpenAI', 'Claude', 'Gemini', 'DeepSeek', 'Qwen', 'Llama'].map(
+          {['DeepSeek', 'Claude', 'Qwen', 'GLM', 'Doubao', 'Spark'].map(
             (name) => (
               <div
                 key={name}
-                className='border-border/30 bg-muted/20 text-muted-foreground flex items-center justify-center rounded-lg border px-3 py-2 text-xs transition-colors duration-300 hover:border-blue-500/30 hover:bg-blue-500/5'
+                className='border-border/30 bg-muted/20 text-muted-foreground flex items-center justify-center rounded-lg border px-3 py-2 text-xs transition-colors duration-300 hover:border-violet-500/30 hover:bg-violet-500/5'
               >
                 {name}
               </div>
@@ -62,52 +59,35 @@ export function Features(_props: FeaturesProps) {
       ),
     },
     {
-      id: 'secure',
+      id: 'price',
       num: '02',
-      title: t('Enterprise Security'),
-      desc: t(
-        'Role-based access control, SSO authentication, API key management, and audit logging'
-      ),
+      title: t('比官方更低价格'),
+      desc: t('通过集中采购和线路优化，价格比官方渠道便宜 10-20%，按量计费无最低消费'),
       span: 'md:col-span-1',
-      icon: <Shield className='size-4 text-emerald-400' />,
+      icon: <DollarSign className='size-4 text-emerald-400' />,
       visual: (
         <div className='mt-4 flex items-center justify-center'>
           <div className='relative'>
             <div className='flex size-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/5'>
-              <Shield
+              <DollarSign
                 className='size-7 text-emerald-500/70'
                 strokeWidth={1.5}
               />
-            </div>
-            <div className='absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500'>
-              <svg
-                className='size-2.5 text-white'
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                strokeWidth={3}
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='m4.5 12.75 6 6 9-13.5'
-                />
-              </svg>
             </div>
           </div>
         </div>
       ),
     },
     {
-      id: 'routing',
+      id: 'global',
       num: '03',
-      title: t('Intelligent Routing'),
-      desc: t('Auto load balancing, failover, rate limiting, and cost optimization'),
+      title: t('全球加速'),
+      desc: t('美西服务器，优化的跨境线路。DeepSeek 仅 300ms 响应'),
       span: 'md:col-span-1',
-      icon: <Globe className='size-4 text-violet-400' />,
+      icon: <Globe className='size-4 text-blue-400' />,
       visual: (
         <div className='mt-4 space-y-2'>
-          {[t('Load Balancing'), t('Rate Limiting'), t('Cost Optimization')].map(
+          {[t('全球节点'), t('智能路由'), t('自动切换')].map(
             (step, i) => (
               <div key={step} className='flex items-center gap-2'>
                 <div
@@ -130,14 +110,14 @@ export function Features(_props: FeaturesProps) {
     {
       id: 'developer',
       num: '04',
-      title: t('Developer First'),
-      desc: t('Drop-in replacement for OpenAI SDK with comprehensive documentation'),
+      title: t('双支付系统'),
+      desc: t('支持支付宝和 Stripe 支付，美元结算，全球开发者无门槛接入'),
       span: 'md:col-span-2',
-      icon: <Code className='size-4 text-amber-400' />,
+      icon: <SquareStack className='size-4 text-amber-400' />,
       visual: (
         <div className='mt-4 flex items-center gap-3'>
           <div className='flex -space-x-2'>
-            {['API', 'SDK', 'CLI', 'Docs'].map((n) => (
+            {['Alipay', 'Stripe', 'USD', 'API'].map((n) => (
               <div
                 key={n}
                 className='border-background from-muted to-muted/60 text-muted-foreground flex size-8 items-center justify-center rounded-full border-2 bg-gradient-to-br text-[9px] font-bold'
@@ -148,7 +128,7 @@ export function Features(_props: FeaturesProps) {
           </div>
           <div className='text-muted-foreground flex items-center gap-1.5 text-xs'>
             <Code className='size-3.5 text-blue-500' />
-            {t('OpenAI Compatible')}
+            {t('OpenAI 兼容')}
           </div>
         </div>
       ),
@@ -157,24 +137,24 @@ export function Features(_props: FeaturesProps) {
 
   const additionalFeatures = [
     {
-      icon: <Gauge className='size-5' strokeWidth={1.5} />,
-      title: t('Usage Analytics'),
-      desc: t('Real-time dashboards, cost tracking, and token consumption monitoring'),
+      icon: <Zap className='size-5' strokeWidth={1.5} />,
+      title: t('极速响应'),
+      desc: t('中美优化线路，Token 生成速度极快'),
     },
     {
-      icon: <DollarSign className='size-5' strokeWidth={1.5} />,
-      title: t('Flexible Billing'),
-      desc: t('Pay-as-you-go, prepaid credits, subscription plans, and budget alerts'),
+      icon: <Shield className='size-5' strokeWidth={1.5} />,
+      title: t('安全可靠'),
+      desc: t('企业级安全，完善的权限管理和用量控制'),
     },
     {
-      icon: <Users className='size-5' strokeWidth={1.5} />,
-      title: t('Multi-Tenant'),
-      desc: t('Isolated workspaces with per-team quotas, keys, and access policies'),
+      icon: <Globe className='size-5' strokeWidth={1.5} />,
+      title: t('无需实名'),
+      desc: t('不需要中国手机号验证，注册即用'),
     },
     {
-      icon: <Download className='size-5' strokeWidth={1.5} />,
-      title: t('Easy Integration'),
-      desc: t('Docker deployment, environment-driven setup, minimal configuration'),
+      icon: <Code className='size-5' strokeWidth={1.5} />,
+      title: t('零迁移成本'),
+      desc: t('兼容 OpenAI SDK，一行代码切换 base_url'),
     },
   ]
 
@@ -183,12 +163,10 @@ export function Features(_props: FeaturesProps) {
       <div className='mx-auto max-w-6xl'>
         <AnimateInView className='mb-16 max-w-lg'>
           <p className='text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase'>
-            {t('Platform Features')}
+            {t('核心优势')}
           </p>
           <h2 className='text-2xl leading-tight font-bold tracking-tight md:text-3xl'>
-            {t('Built for production,')}
-            <br />
-            {t('designed for teams')}
+            {t('为什么选择 ChinaiAPI？')}
           </h2>
         </AnimateInView>
 

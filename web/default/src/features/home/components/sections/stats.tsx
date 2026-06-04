@@ -88,9 +88,8 @@ interface StatsProps {
 }
 
 interface StatItem {
-  end?: number
-  staticValue?: string
-  suffix?: string
+  end: number
+  suffix: string
   label: string
   decimals?: number
 }
@@ -99,10 +98,10 @@ export function Stats(_props: StatsProps) {
   const { t } = useTranslation()
 
   const stats: StatItem[] = [
-    { end: 40, suffix: '+', label: t('AI Providers') },
-    { end: 200, suffix: '+', label: t('AI Models') },
-    { staticValue: 'OpenAI', label: t('OpenAI Compatible') },
-    { end: 99.9, suffix: '%', label: t('Uptime SLA'), decimals: 1 },
+    { end: 99.9, suffix: '%', label: t('服务可用性'), decimals: 1 },
+    { end: 300, suffix: 'ms', label: t('平均延迟'), decimals: 0 },
+    { end: 10, suffix: '+', label: t('接入模型'), decimals: 0 },
+    { end: 20, suffix: '%', label: t('比官方更便宜'), decimals: 0 },
   ]
 
   return (
@@ -115,11 +114,7 @@ export function Stats(_props: StatsProps) {
               className='flex flex-col items-center text-center'
             >
               <span className='text-2xl font-bold tracking-tight md:text-3xl'>
-                {s.staticValue ? (
-                  s.staticValue
-                ) : (
-                  <Counter end={s.end!} suffix={s.suffix} decimals={s.decimals} />
-                )}
+                <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
               </span>
               <span className='text-muted-foreground mt-1.5 text-xs'>
                 {s.label}

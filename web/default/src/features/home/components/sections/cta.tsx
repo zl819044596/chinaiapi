@@ -42,8 +42,8 @@ export function CTA(props: CTAProps) {
         className='absolute inset-0 -z-10 opacity-20 dark:opacity-[0.08]'
         style={{
           background: [
-            'radial-gradient(ellipse 50% 50% at 30% 50%, oklch(0.7 0.15 250 / 70%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 40% 40% at 70% 40%, oklch(0.65 0.12 200 / 50%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 50% 50% at 30% 50%, oklch(0.6 0.20 310 / 70%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 40% 40% at 70% 40%, oklch(0.55 0.15 260 / 50%) 0%, transparent 70%)',
           ].join(', '),
         }}
       />
@@ -53,20 +53,18 @@ export function CTA(props: CTAProps) {
         animation='scale-in'
       >
         <h2 className='text-2xl leading-tight font-bold tracking-tight md:text-4xl'>
-          {t('Ready to unify')}
+          {t('现在开始使用')}
           <br />
-          <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-            {t('your AI infrastructure?')}
+          <span className='bg-gradient-to-r from-violet-400 via-purple-400 to-pink-500 bg-clip-text text-transparent'>
+            {t('无需信用卡，注册即送测试额度')}
           </span>
         </h2>
         <p className='text-muted-foreground/80 mx-auto mt-5 max-w-md text-sm leading-relaxed md:text-base'>
-          {t(
-            'Deploy your own gateway and start routing all AI requests through a single managed endpoint.'
-          )}
+          {t('DeepSeek V4 Flash 低至 $0.088/M tokens，比 OpenRouter 便宜 10% 以上')}
         </p>
         <div className='mt-8 flex items-center justify-center gap-3'>
           <Button className='group rounded-lg' render={<Link to='/sign-up' />}>
-            {t('Get Started')}
+            {t('免费注册')}
             <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
           </Button>
           <Button
@@ -74,7 +72,7 @@ export function CTA(props: CTAProps) {
             className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
             render={<Link to='/pricing' />}
           >
-            {t('View Pricing')}
+            {t('查看定价')}
           </Button>
         </div>
       </AnimateInView>

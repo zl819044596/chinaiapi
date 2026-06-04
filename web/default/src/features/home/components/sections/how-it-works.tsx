@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Settings, Zap, BarChart3 } from 'lucide-react'
+import { UserPlus, Key, Terminal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { AnimateInView } from '@/components/animate-in-view'
 
@@ -26,25 +26,21 @@ export function HowItWorks() {
   const steps = [
     {
       num: '1',
-      title: t('Deploy'),
-      desc: t(
-        'Get started in minutes with Docker or one-click cloud deployment'
-      ),
-      icon: <Settings className='size-6' strokeWidth={1.5} />,
+      title: t('注册账号'),
+      desc: t('邮箱注册即可使用，支持支付宝/Stripe充值，无需中国手机号'),
+      icon: <UserPlus className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '2',
-      title: t('Configure'),
-      desc: t(
-        'Add provider API keys, set up models, and define access policies'
-      ),
-      icon: <Zap className='size-6' strokeWidth={1.5} />,
+      title: t('创建 API Key'),
+      desc: t('后台一键生成 Key，自由设置额度上限，实时监控用量'),
+      icon: <Key className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '3',
-      title: t('Manage'),
-      desc: t('Monitor usage, control costs, manage teams, and scale effortlessly'),
-      icon: <BarChart3 className='size-6' strokeWidth={1.5} />,
+      title: t('调用模型'),
+      desc: t('使用 OpenAI SDK 或 HTTP 直接调用，支持 Python/Node/curl 等'),
+      icon: <Terminal className='size-6' strokeWidth={1.5} />,
     },
   ]
 
@@ -53,10 +49,10 @@ export function HowItWorks() {
       <div className='mx-auto max-w-6xl'>
         <AnimateInView className='mb-16 text-center md:mb-20'>
           <p className='text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase'>
-            {t('How It Works')}
+            {t('三步接入')}
           </p>
           <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
-            {t('Three steps to get started')}
+            {t('三分钟完成接入')}
           </h2>
         </AnimateInView>
 

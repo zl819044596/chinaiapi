@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, BookOpen } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useStatus } from '@/hooks/use-status'
 import { Button } from '@/components/ui/button'
@@ -30,44 +30,6 @@ interface HeroProps {
 
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
-  const { status } = useStatus()
-  const docsUrl = status?.docs_link as string | undefined
-
-  const renderDocsButton = () => {
-    if (!docsUrl) return null
-    const isExternal = docsUrl.startsWith('http')
-    if (isExternal) {
-      return (
-        <Button
-          variant='outline'
-          className='group border-border/50 hover:border-border hover:bg-muted/50 inline-flex h-11 items-center gap-1.5 rounded-lg px-5 text-sm font-medium'
-          render={
-            <a href={docsUrl} target='_blank' rel='noopener noreferrer' />
-          }
-        >
-          <BookOpen className='text-muted-foreground/80 group-hover:text-foreground size-4 transition-colors duration-200' />
-          <span>{t('Docs')}</span>
-        </Button>
-      )
-    }
-    return (
-      <Button
-        variant='outline'
-        className='group border-border/50 hover:border-border hover:bg-muted/50 inline-flex h-11 items-center gap-1.5 rounded-lg px-5 text-sm font-medium'
-        render={<Link to={docsUrl} />}
-      >
-        <BookOpen className='text-muted-foreground/80 group-hover:text-foreground size-4 transition-colors duration-200' />
-        <span>{t('Docs')}</span>
-      </Button>
-    )
-  }
-
-  const capabilities = [
-    t('OpenAI Compatible'),
-    t('40+ Providers'),
-    t('Smart Routing'),
-    t('Usage Analytics'),
-  ]
 
   return (
     <section className='relative z-10 overflow-hidden px-6 pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-36 lg:pb-28'>
@@ -77,9 +39,9 @@ export function Hero(props: HeroProps) {
         className='pointer-events-none absolute inset-0 -z-10 opacity-25 dark:opacity-[0.12]'
         style={{
           background: [
-            'radial-gradient(ellipse 60% 50% at 20% 20%, oklch(0.72 0.18 250 / 80%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 50% 40% at 80% 15%, oklch(0.65 0.15 200 / 60%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 40% 35% at 40% 80%, oklch(0.70 0.12 280 / 40%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 60% 50% at 20% 20%, oklch(0.55 0.20 310 / 80%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 50% 40% at 80% 15%, oklch(0.50 0.15 260 / 60%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 40% 35% at 40% 80%, oklch(0.60 0.12 220 / 40%) 0%, transparent 70%)',
           ].join(', '),
         }}
       />
@@ -90,37 +52,35 @@ export function Hero(props: HeroProps) {
       />
 
       <div className='mx-auto grid max-w-6xl grid-cols-1 items-start gap-12 lg:grid-cols-12 lg:gap-8'>
-        {/* Left Column: Title, description, action buttons */}
+        {/* Left Column */}
         <div className='flex flex-col items-start text-left lg:col-span-6'>
           {/* Top Pill Badge */}
           <div
-            className='landing-animate-fade-up mb-5 inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/5 px-3 py-1.5 text-[11px] font-medium text-blue-600 opacity-0 shadow-xs dark:border-blue-400/20 dark:bg-blue-400/5 dark:text-blue-400'
+            className='landing-animate-fade-up mb-5 inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-[11px] font-medium text-violet-600 opacity-0 shadow-xs dark:border-violet-400/20 dark:bg-violet-400/5 dark:text-violet-400'
             style={{ animationDelay: '0ms' }}
           >
             <span className='relative flex size-1.5'>
-              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75' />
-              <span className='relative inline-flex size-1.5 rounded-full bg-blue-500 dark:bg-blue-400' />
+              <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75' />
+              <span className='relative inline-flex size-1.5 rounded-full bg-violet-500 dark:bg-violet-400' />
             </span>
-            <span>{t('Universal AI API Gateway')}</span>
+            <span>{t('在线服务 · 即开即用')}</span>
           </div>
 
           <h1
             className='landing-animate-fade-up text-[clamp(2.25rem,4.5vw,3.25rem)] leading-[1.15] font-bold tracking-tight'
             style={{ animationDelay: '60ms' }}
           >
-            {t('One API for')}
+            {t('中国AI模型')}
             <br />
-            <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-              {t('All AI Models')}
+            <span className='bg-gradient-to-r from-violet-400 via-purple-400 to-pink-500 bg-clip-text text-transparent'>
+              {t('一站式API接入')}
             </span>
           </h1>
           <p
             className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-xl text-base leading-relaxed opacity-0 md:text-[15px]'
             style={{ animationDelay: '120ms' }}
           >
-            {t(
-              'Access 40+ AI providers through a single, OpenAI-compatible endpoint. Fast, reliable, and built for scale.'
-            )}
+            {t('DeepSeek、Claude、通义千问…… 一个 API Key 调用所有中国主流大模型，比官方更低价格，无需中国手机号，无需海外服务器。')}
           </p>
 
           <div
@@ -133,10 +93,9 @@ export function Hero(props: HeroProps) {
                   className='group h-11 rounded-lg px-5 text-sm font-medium'
                   render={<Link to='/dashboard' />}
                 >
-                  {t('Go to Dashboard')}
+                  {t('进入控制台')}
                   <ArrowRight className='ml-1.5 size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
                 </Button>
-                {renderDocsButton()}
               </>
             ) : (
               <>
@@ -144,7 +103,7 @@ export function Hero(props: HeroProps) {
                   className='group h-11 rounded-lg px-5 text-sm font-medium'
                   render={<Link to='/sign-up' />}
                 >
-                  {t('Get Started')}
+                  {t('免费注册 → 获取 API Key')}
                   <ArrowRight className='ml-1.5 size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
                 </Button>
                 <Button
@@ -152,31 +111,33 @@ export function Hero(props: HeroProps) {
                   className='border-border/50 hover:border-border hover:bg-muted/50 h-11 rounded-lg px-5 text-sm font-medium'
                   render={<Link to='/pricing' />}
                 >
-                  {t('View Pricing')}
+                  {t('查看定价')}
                 </Button>
-                {renderDocsButton()}
               </>
             )}
           </div>
 
-          {/* Key Capabilities */}
+          {/* Feature tags */}
           <div
-            className='landing-animate-fade-up mt-10 w-full max-w-xl opacity-0'
+            className='landing-animate-fade-up mt-8 flex flex-wrap items-center gap-4 opacity-0'
             style={{ animationDelay: '240ms' }}
           >
-            <span className='text-muted-foreground/50 mb-3 block text-[10px] font-bold tracking-[0.15em] uppercase'>
-              {t('Key Capabilities')}
-            </span>
-            <div className='flex flex-wrap items-center gap-2'>
-              {capabilities.map((cap) => (
-                <div
-                  key={cap}
-                  className='border-border/40 bg-muted/15 text-foreground/70 inline-flex items-center rounded-full border px-4 py-1.5 text-xs font-medium backdrop-blur-xs'
-                >
-                  {cap}
-                </div>
-              ))}
-            </div>
+            {[
+              { label: '支付宝 / Stripe', color: 'text-emerald-500' },
+              { label: 'OpenAI 兼容', color: 'text-blue-400' },
+              { label: '99.9% SLA', color: 'text-violet-400' },
+              { label: 'USD 按量计费', color: 'text-amber-400' },
+            ].map((tag) => (
+              <span
+                key={tag.label}
+                className='flex items-center gap-1.5 text-xs text-muted-foreground'
+              >
+                <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' className={`size-3.5 ${tag.color}`}>
+                  <path d='M5 13l4 4L19 7' />
+                </svg>
+                {tag.label}
+              </span>
+            ))}
           </div>
         </div>
 
