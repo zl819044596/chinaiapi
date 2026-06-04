@@ -119,7 +119,13 @@ func SubscriptionRequestCreemPay(c *gin.Context) {
 		Quota:     0,
 	}
 
-	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, product, user.Email, user.Username)
+	userEmail := user.Email
+	if userEmail == "" {
+		logger.LogWarn(c.Request.Context(), fmt.Sprintf("Creem 订阅用户邮箱为空，使用占位邮箱 user_id=%d username=%q", user.Id, user.Username))
+		userEmail = fmt.Sprintf("user_%d@placeholder.chinaiapi.com", user.Id)
+	}
+
+	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, product, userEmail, user.Username)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem 订阅支付链接创建失败 trade_no=%s product_id=%s error=%q", referenceId, product.ProductId, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})

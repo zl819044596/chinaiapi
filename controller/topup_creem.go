@@ -123,7 +123,12 @@ func (*CreemAdaptor) RequestPay(c *gin.Context, req *CreemPayRequest) {
 	}
 
 	// 创建支付链接，传入用户邮箱
-	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, selectedProduct, user.Email, user.Username)
+	userEmail := user.Email
+	if userEmail == "" {
+		logger.LogWarn(c.Request.Context(), fmt.Sprintf("Creem 用户邮箱为空，使用占位邮箱 user_id=%d username=%q", user.Id, user.Username))
+		userEmail = fmt.Sprintf("user_%d@placeholder.chinaiapi.com", user.Id)
+	}
+	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, selectedProduct, userEmail, user.Username)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem 创建支付链接失败 user_id=%d trade_no=%s product_id=%s error=%q", id, referenceId, selectedProduct.ProductId, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
