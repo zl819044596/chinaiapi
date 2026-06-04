@@ -1,0 +1,12 @@
+node_modules/
+logs/
+*.exe
+data/
+.env
+web/default/node_modules/
+web/classic/node_modules/
+web/node_modules/
+web/default/dist/
+web/classic/dist/
+.pnpm-store/
+*.log
