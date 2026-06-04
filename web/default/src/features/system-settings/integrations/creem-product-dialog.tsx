@@ -16,9 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import * as z from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -71,6 +71,8 @@ type CreemProductDialogProps = {
   editData?: CreemProduct | null
 }
 
+const DEFAULT_QUOTA_PER_USD = 100000
+
 export function CreemProductDialog({
   open,
   onOpenChange,
@@ -90,6 +92,24 @@ export function CreemProductDialog({
       currency: 'USD',
     },
   })
+
+  const watchPrice = useWatch({ control: form.control, name: 'price' })
+  const watchQuota = useWatch({ control: form.control, name: 'quota' })
+
+  // Auto-calculate quota when price changes (only if quota is empty or default)
+  const autoFillQuota = useCallback(() => {
+    if (watchPrice > 0) {
+      const suggested = Math.round(watchPrice * DEFAULT_QUOTA_PER_USD)
+      form.setValue('quota', suggested, { shouldValidate: true })
+    }
+  }, [watchPrice, form])
+
+  // Auto-fill on price change in create mode
+  useEffect(() => {
+    if (!isEditMode && watchPrice > 0 && watchQuota === 0) {
+      autoFillQuota()
+    }
+  }, [watchPrice, isEditMode, watchQuota, autoFillQuota])
 
   useEffect(() => {
     if (editData) {
@@ -243,6 +263,12 @@ export function CreemProductDialog({
                   <FormDescription>
                     {t('Amount of quota to credit to user account.')}
                   </FormDescription>
+                  {watchPrice > 0 && watchQuota > 0 && (
+                    <p className='text-xs text-muted-foreground'>
+                      {t('Auto-calculated')}: ${watchPrice} × {DEFAULT_QUOTA_PER_USD.toLocaleString()} ={' '}
+                      {watchQuota.toLocaleString()} {t('quota')}
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
