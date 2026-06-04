@@ -265,6 +265,13 @@ export function Wallet(props: WalletProps) {
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
             <WalletStatsCard user={user} loading={userLoading} />
 
+            {/* 提示用户设置邮箱 */}
+            {user && !user.email && !userLoading && (
+              <div className='rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400'>
+                {t('Your email is not set. Please set it in your profile for payment receipts and account security.')}
+              </div>
+            )}
+
             <div
               className={
                 showSubscriptionPanel
