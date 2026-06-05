@@ -10,3 +10,4 @@ web/default/dist/
 web/classic/dist/
 .pnpm-store/
 *.log
+new-api
