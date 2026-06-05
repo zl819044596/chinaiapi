@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { Activity, BarChart3, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatQuota } from '@/lib/format'
+import { getCurrencyDisplay } from '@/lib/currency'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { UserWalletData } from '../types'
 
@@ -27,8 +28,24 @@ interface WalletStatsCardProps {
   loading?: boolean
 }
 
+/** Format raw quota number with thousand separators (e.g. 105,180,000) */
+function formatQuotaRaw(value: number): string {
+  return value.toLocaleString('en-US')
+}
+
+/** Get the display label for quota ("额度" or fallback) */
+function getQuotaLabel(): string {
+  const { meta } = getCurrencyDisplay()
+  if (meta.kind === 'tokens') {
+    return 'Tokens'
+  }
+  return '额度'
+}
+
 export function WalletStatsCard(props: WalletStatsCardProps) {
   const { t } = useTranslation()
+  const quotaLabel = getQuotaLabel()
+
   if (props.loading) {
     return (
       <div className='overflow-hidden rounded-lg border'>
@@ -49,18 +66,21 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     {
       label: t('Current Balance'),
       value: formatQuota(props.user?.quota ?? 0),
+      quotaValue: formatQuotaRaw(props.user?.quota ?? 0),
       description: t('Remaining quota'),
       icon: WalletCards,
     },
     {
       label: t('Total Usage'),
       value: formatQuota(props.user?.used_quota ?? 0),
+      quotaValue: formatQuotaRaw(props.user?.used_quota ?? 0),
       description: t('Total consumed quota'),
       icon: BarChart3,
     },
     {
       label: t('API Requests'),
       value: (props.user?.request_count ?? 0).toLocaleString(),
+      quotaValue: null,
       description: t('Total requests made'),
       icon: Activity,
     },
@@ -81,6 +101,13 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             <div className='text-foreground mt-1.5 font-mono text-base font-bold tracking-tight break-all tabular-nums sm:mt-2 sm:text-2xl'>
               {item.value}
             </div>
+
+            {item.quotaValue != null && (
+              <div className='text-muted-foreground/80 mt-0.5 font-mono text-xs tabular-nums'>
+                {item.quotaValue} {quotaLabel}
+              </div>
+            )}
+
             <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>
               {item.description}
             </div>
