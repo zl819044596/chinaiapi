@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { formatCurrencyFromUSD } from '@/lib/currency'
 import { QUOTA_TYPE_VALUES, TOKEN_UNIT_DIVISORS } from '../constants'
 import type { PricingModel, TokenUnit, PriceType } from '../types'
 
@@ -25,10 +24,10 @@ import type { PricingModel, TokenUnit, PriceType } from '../types'
 // ----------------------------------------------------------------------------
 
 /**
- * Strip trailing zeros from formatted price string while preserving currency symbols
+ * Strip trailing zeros from formatted number string.
  */
 export function stripTrailingZeros(formatted: string): string {
-  // Match currency symbol at start, number, and potential 'k' suffix
+  // Match optional symbol, number, and potential 'k' suffix
   const match = formatted.match(/^([^\d-]*)([-\d,]+\.?\d*)(k?)$/)
   if (!match) return formatted
 
@@ -53,6 +52,22 @@ export function stripTrailingZeros(formatted: string): string {
 }
 
 /**
+ * Format a plain number without any currency symbol.
+ * Uses configurable decimal places for large/small values.
+ */
+function formatPlainNumber(
+  value: number,
+  digitsLarge: number = 4,
+  digitsSmall: number = 6
+): string {
+  if (!Number.isFinite(value)) return '-'
+
+  const abs = Math.abs(value)
+  const digits = abs >= 1 ? digitsLarge : digitsSmall
+  return value.toFixed(digits).replace(/\.?0+$/, '')
+}
+
+/**
  * Find minimum group ratio from enabled groups
  */
 function getMinGroupRatio(
@@ -74,7 +89,7 @@ function getMinGroupRatio(
 }
 
 /**
- * Calculate token price in USD.
+ * Calculate token price in quota-based units.
  *
  * Returns NaN when the required ratio field is missing/null so callers can
  * skip rendering that price type.
@@ -127,8 +142,7 @@ function hasRatio(value: number | null | undefined): boolean {
  * priceRate represents how much users need to recharge (in the display currency)
  * to get 1 USD credit. usdExchangeRate is the real exchange rate.
  *
- * The returned value will be formatted by formatCurrencyFromUSD, which will
- * multiply by the display currency's exchange rate.
+ * The returned value will be formatted as a plain number (no currency symbol).
  *
  * Examples:
  *
@@ -137,15 +151,14 @@ function hasRatio(value: number | null | undefined): boolean {
  *    - priceRate = 0.5 (recharge $0.5 to get $1 credit)
  *    - usdExchangeRate = 1
  *    - Return: 1 × 0.5 / 1 = 0.5
- *    - formatCurrencyFromUSD(0.5) → $0.5 ✓
+ *    - Display: "0.5"
  *
  * 2. Display currency = CNY:
  *    - Model: 1 USD
  *    - priceRate = 4 (recharge ¥4 to get $1 credit)
  *    - usdExchangeRate = 7 (real rate: 1 USD = ¥7)
  *    - Return: 1 × 4 / 7 = 0.571
- *    - formatCurrencyFromUSD(0.571) → 0.571 × 7 = ¥4 ✓
- *    - Normal price: ¥7, Recharge price: ¥4 (cheaper!)
+ *    - Display: "0.571"
  */
 function applyRechargeRate(
   price: number,
@@ -158,7 +171,7 @@ function applyRechargeRate(
 }
 
 /**
- * Format token-based price for display
+ * Format token-based price for display (plain number, no currency symbol).
  */
 export function formatPrice(
   model: PricingModel,
@@ -187,15 +200,11 @@ export function formatPrice(
   )
 
   const price = priceInUSD / TOKEN_UNIT_DIVISORS[tokenUnit]
-  return formatCurrencyFromUSD(price, {
-    digitsLarge: 4,
-    digitsSmall: 6,
-    abbreviate: false,
-  })
+  return formatPlainNumber(price, 4, 6)
 }
 
 /**
- * Format price for a specific group (token-based)
+ * Format price for a specific group (token-based, plain number).
  */
 export function formatGroupPrice(
   model: PricingModel,
@@ -222,15 +231,11 @@ export function formatGroupPrice(
   )
 
   const price = priceInUSD / TOKEN_UNIT_DIVISORS[tokenUnit]
-  return formatCurrencyFromUSD(price, {
-    digitsLarge: 4,
-    digitsSmall: 6,
-    abbreviate: false,
-  })
+  return formatPlainNumber(price, 4, 6)
 }
 
 /**
- * Format fixed price for pay-per-request models (with specific group)
+ * Format fixed price for pay-per-request models (with specific group, plain number).
  */
 export function formatFixedPrice(
   model: PricingModel,
@@ -254,15 +259,11 @@ export function formatFixedPrice(
     usdExchangeRate
   )
 
-  return formatCurrencyFromUSD(priceInUSD, {
-    digitsLarge: 4,
-    digitsSmall: 4,
-    abbreviate: false,
-  })
+  return formatPlainNumber(priceInUSD, 4, 4)
 }
 
 /**
- * Format fixed price for pay-per-request models (minimum price from all groups)
+ * Format fixed price for pay-per-request models (minimum price from all groups, plain number).
  */
 export function formatRequestPrice(
   model: PricingModel,
@@ -289,9 +290,5 @@ export function formatRequestPrice(
     usdExchangeRate
   )
 
-  return formatCurrencyFromUSD(priceInUSD, {
-    digitsLarge: 4,
-    digitsSmall: 4,
-    abbreviate: false,
-  })
+  return formatPlainNumber(priceInUSD, 4, 4)
 }
