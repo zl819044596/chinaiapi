@@ -20,12 +20,13 @@ import { useEffect, useState } from 'react'
 import { useForm, type SubmitErrorHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, KeyRound, Settings2, WalletCards } from 'lucide-react'
+import { ChevronDown, Info, KeyRound, Settings2, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getUserModels, getUserGroups } from '@/lib/api'
 import { getCurrencyDisplay, getCurrencyLabel } from '@/lib/currency'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth-store'
 import { useStatus } from '@/hooks/use-status'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,7 +77,6 @@ import {
 } from '../lib'
 import { type ApiKey } from '../types'
 import {
-  ApiKeyGroupCombobox,
   type ApiKeyGroupOption,
 } from './api-key-group-combobox'
 import { useApiKeys } from './api-keys-provider'
@@ -96,6 +96,8 @@ export function ApiKeysMutateDrawer({
   const isUpdate = !!currentRow
   const { triggerRefresh } = useApiKeys()
   const { status } = useStatus()
+  const currentUser = useAuthStore((s) => s.auth.user)
+  const userGroup = currentUser?.group || 'default'
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const defaultUseAutoGroup = status?.default_use_auto_group === true
@@ -302,12 +304,11 @@ export function ApiKeysMutateDrawer({
                   <FormItem>
                     <FormLabel>{t('Group')}</FormLabel>
                     <FormControl>
-                      <ApiKeyGroupCombobox
-                        options={groups}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder={t('Select a group')}
-                      />
+                      <div className='flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-2 text-sm'>
+                        <span className='font-medium text-foreground'>{userGroup}</span>
+                        <span className='text-muted-foreground text-xs'>({t('Auto — uses your account group')})</span>
+                        <Info className='text-muted-foreground/60 ml-auto size-3.5 shrink-0' />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
