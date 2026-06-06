@@ -1,0 +1,220 @@
+---
+title: API Usage
+description: How to use ChinAI API with OpenAI, Anthropic Claude, and Codex Responses protocols
+---
+
+# API Usage
+
+ChinAI API supports multiple AI protocols through a single API key. You can use the same key to call OpenAI-compatible, Anthropic Claude, and Codex Responses endpoints.
+
+## Base URL
+
+```
+https://chinaiapi.com
+```
+
+## Authentication
+
+All requests require an API key. Pass it via the `Authorization` header:
+
+```
+Authorization: Bearer sk-your-api-key-here
+```
+
+## OpenAI Chat Completions Protocol
+
+Standard OpenAI-compatible chat completions endpoint.
+
+### Endpoint
+
+```
+POST https://chinaiapi.com/v1/chat/completions
+```
+
+### cURL Example
+
+```bash
+curl https://chinaiapi.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-api-key-here" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'
+```
+
+### Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://chinaiapi.com/v1",
+    api_key="sk-your-api-key-here"
+)
+
+response = client.chat.completions.create(
+    model="deepseek-v4-pro",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)
+```
+
+### JavaScript (OpenAI SDK)
+
+```javascript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  baseURL: 'https://chinaiapi.com/v1',
+  apiKey: 'sk-your-api-key-here',
+});
+
+const response = await client.chat.completions.create({
+  model: 'deepseek-v4-pro',
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+console.log(response.choices[0].message.content);
+```
+
+## Anthropic Claude Messages Protocol
+
+Use Anthropic's Messages API format via ChinAI API.
+
+### Endpoint
+
+```
+POST https://chinaiapi.com/v1/messages
+```
+
+### cURL Example
+
+```bash
+curl https://chinaiapi.com/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-your-api-key-here" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'
+```
+
+### Python (Anthropic SDK)
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://chinaiapi.com",
+    api_key="sk-your-api-key-here"
+)
+
+response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.content[0].text)
+```
+
+### JavaScript (Anthropic SDK)
+
+```javascript
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({
+  baseURL: 'https://chinaiapi.com',
+  apiKey: 'sk-your-api-key-here',
+});
+
+const response = await client.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+console.log(response.content[0].text);
+```
+
+## Codex Responses API
+
+Use OpenAI's Responses API format for Codex-compatible tools.
+
+### Endpoint
+
+```
+POST https://chinaiapi.com/v1/responses
+```
+
+### cURL Example
+
+```bash
+curl https://chinaiapi.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-api-key-here" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "input": "Write a hello world in Python"
+  }'
+```
+
+### Codex Responses (Compact)
+
+For compact responses, use the `/v1/responses/compact` endpoint:
+
+```bash
+curl https://chinaiapi.com/v1/responses/compact \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-api-key-here" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "input": "Write a hello world in Python"
+  }'
+```
+
+### Python
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://chinaiapi.com/v1",
+    api_key="sk-your-api-key-here"
+)
+
+response = client.responses.create(
+    model="deepseek-v4-pro",
+    input="Write a hello world in Python"
+)
+print(response.output_text)
+```
+
+## Configuration Guides
+
+| Tool | Protocol | Configuration |
+|------|----------|--------------|
+| **Claude Code** | Anthropic | Set `ANTHROPIC_BASE_URL=https://chinaiapi.com` and `ANTHROPIC_API_KEY=sk-...` |
+| **OpenAI CLI / SDK** | OpenAI | Set `base_url` to `https://chinaiapi.com/v1` |
+| **Codex CLI** | Codex Responses | Set `CODE_BASE_URL=https://chinaiapi.com` and `CODE_API_KEY=sk-...` |
+| **OpenCode** | OpenAI | Configure base URL to `https://chinaiapi.com/v1` |
+| **Cherry Studio** | OpenAI | Add provider with API address `https://chinaiapi.com` |
+
+## Available Models
+
+Key models you can use:
+
+| Model | Protocol | Provider Channel |
+|-------|----------|:----------------:|
+| `deepseek-v4-pro` | OpenAI Chat / Codex | DeepSeek |
+| `deepseek-v4-flash` | OpenAI Chat / Codex | DeepSeek |
+| `claude-sonnet-4-20250514` | Anthropic Messages | Claude (via DeepSeek) |
+| `claude-sonnet-4` | Anthropic Messages | Claude (via DeepSeek) |
+| `qwen3.7-plus` | OpenAI Chat | Alibaba Cloud |
+| `qwen-flash` | OpenAI Chat | Alibaba Cloud |
+
+See the [Pricing](/en/docs/guide/feature-guide/user/pricing) page for the full model list and rates.
