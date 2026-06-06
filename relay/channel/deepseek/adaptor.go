@@ -9,11 +9,14 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/relay/channel"
 	"github.com/QuantumNous/new-api/relay/channel/claude"
 	"github.com/QuantumNous/new-api/relay/channel/openai"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/constant"
+	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/service/openaicompat"
 	"github.com/QuantumNous/new-api/setting/reasoning"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
@@ -159,8 +162,14 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	// TODO implement me
-	return nil, errors.New("not implemented")
+	// Convert Responses API request to Chat Completions format
+	// since DeepSeek doesn't natively support the Responses API
+	chatReq, err := openaicompat.ResponsesRequestToChatCompletionsRequest(&request)
+	if err != nil {
+		return nil, fmt.Errorf("deepseek: failed to convert responses request to chat completions: %w", err)
+	}
+	// Now convert from Chat Completions to DeepSeek format
+	return a.ConvertOpenAIRequest(c, info, chatReq)
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
@@ -173,9 +182,136 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		adaptor := claude.Adaptor{}
 		return adaptor.DoResponse(c, resp, info)
 	default:
+		// For Responses API relay mode, DeepSeek returns Chat Completions format
+		// but the client expects Responses format. Convert the response.
+		if info.RelayMode == constant.RelayModeResponses || info.RelayMode == constant.RelayModeResponsesCompact {
+			return handleDeepSeekResponsesResponse(c, resp, info)
+		}
 		adaptor := openai.Adaptor{}
 		return adaptor.DoResponse(c, resp, info)
 	}
+}
+
+// handleDeepSeekResponsesResponse converts a Chat Completions response from DeepSeek
+// to the Responses API format expected by the client (e.g., Codex CLI).
+func handleDeepSeekResponsesResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
+	defer service.CloseResponseBodyGracefully(resp)
+
+	// Read the Chat Completions response body
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+	}
+
+	// Parse as Chat Completions response
+	var textResp dto.OpenAITextResponse
+	if err := common.Unmarshal(responseBody, &textResp); err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+	}
+
+	// Build a Responses API response from the Chat Completions response
+	outputItems := make([]map[string]any, 0)
+
+	// First, check for reasoning content
+	reasoningContent := ""
+	for _, choice := range textResp.Choices {
+		msg := choice.Message
+		if msg.Role == "assistant" {
+			// Add reasoning content if present
+			if rc := msg.GetReasoningContent(); rc != "" {
+				reasoningContent = rc
+			}
+		}
+	}
+
+	// Build output items from choices
+	for i, choice := range textResp.Choices {
+		msg := choice.Message
+		if msg.Role == "assistant" {
+			// Add tool calls
+			for _, tc := range msg.ParseToolCalls() {
+				if tc.ID != "" && tc.Function.Name != "" {
+					outputItems = append(outputItems, map[string]any{
+						"type":      "function_call",
+						"call_id":   tc.ID,
+						"name":      tc.Function.Name,
+						"arguments": tc.Function.Arguments,
+					})
+				}
+			}
+
+			// Add the text content
+			if msg.IsStringContent() {
+				text := msg.StringContent()
+				if text != "" {
+					item := map[string]any{
+						"type": "output_text",
+						"text": text,
+					}
+					// Include annotations if reasoning content exists
+					if reasoningContent != "" {
+						item["annotations"] = []map[string]any{
+							{
+								"type":        "reasoning",
+								"description": reasoningContent,
+							},
+						}
+					}
+					outputItems = append(outputItems, item)
+				}
+			}
+		}
+		_ = i // suppress unused
+	}
+
+	// If no output items were generated, create a default one
+	if len(outputItems) == 0 {
+		outputItems = append(outputItems, map[string]any{
+			"type": "output_text",
+			"text": "",
+		})
+	}
+
+	// Build usage
+	usage := &dto.Usage{
+		PromptTokens:     textResp.Usage.PromptTokens,
+		CompletionTokens: textResp.Usage.CompletionTokens,
+		TotalTokens:      textResp.Usage.TotalTokens,
+	}
+	if textResp.Usage.PromptTokensDetails.CachedTokens > 0 {
+		usage.PromptTokensDetails.CachedTokens = textResp.Usage.PromptTokensDetails.CachedTokens
+	}
+
+	// Build the Responses API response
+	responsesResponse := map[string]any{
+		"id":      textResp.Id,
+		"object":  "response",
+		"created": textResp.Created,
+		"model":   textResp.Model,
+		"output":  outputItems,
+		"usage": map[string]any{
+			"input_tokens":   textResp.Usage.PromptTokens,
+			"output_tokens":  textResp.Usage.CompletionTokens,
+			"total_tokens":   textResp.Usage.TotalTokens,
+			"input_cached_tokens": textResp.Usage.PromptTokensDetails.CachedTokens,
+		},
+		"status": "completed",
+	}
+
+	if info.RelayMode == constant.RelayModeResponsesCompact {
+		// For compact mode, add additional fields
+		responsesResponse["conversation_id"] = ""
+	}
+
+	jsonData, err := common.Marshal(responsesResponse)
+	if err != nil {
+		return nil, types.NewOpenAIError(err, types.ErrorCodeInvalidRequest, http.StatusInternalServerError)
+	}
+
+	logger.LogDebug(c, "responses response: %s", jsonData)
+	service.IOCopyBytesGracefully(c, resp, jsonData)
+
+	return usage, nil
 }
 
 func (a *Adaptor) GetModelList() []string {

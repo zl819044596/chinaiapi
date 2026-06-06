@@ -1,133 +1,275 @@
 package openaicompat
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/samber/lo"
 )
 
-func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesResponse, id string) (*dto.OpenAITextResponse, *dto.Usage, error) {
-	if resp == nil {
-		return nil, nil, errors.New("response is nil")
+// ResponsesRequestToChatCompletionsRequest converts an OpenAI Responses API request
+// to a Chat Completions API request. This allows Responses API consumers (like Codex CLI)
+// to work with providers that only support the Chat Completions format (like DeepSeek).
+func ResponsesRequestToChatCompletionsRequest(req *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
+	if req.Model == "" {
+		return nil, fmt.Errorf("model is required")
 	}
 
-	text := ExtractOutputTextFromResponses(resp)
+	messages := make([]dto.Message, 0)
 
-	usage := &dto.Usage{}
-	if resp.Usage != nil {
-		if resp.Usage.InputTokens != 0 {
-			usage.PromptTokens = resp.Usage.InputTokens
-			usage.InputTokens = resp.Usage.InputTokens
+	// Convert Instructions to system message
+	if len(req.Instructions) > 0 {
+		var instructionsStr string
+		if err := common.Unmarshal(req.Instructions, &instructionsStr); err == nil {
+			if strings.TrimSpace(instructionsStr) != "" {
+				msg := dto.Message{Role: "system"}
+				msg.SetStringContent(instructionsStr)
+				messages = append(messages, msg)
+			}
 		}
-		if resp.Usage.OutputTokens != 0 {
-			usage.CompletionTokens = resp.Usage.OutputTokens
-			usage.OutputTokens = resp.Usage.OutputTokens
+	}
+
+	// Parse Input items and convert to messages
+	if len(req.Input) > 0 {
+		inputMessages := parseResponsesInput(req.Input)
+		messages = append(messages, inputMessages...)
+	}
+
+	// Build tools as ToolCallRequest
+	var tools []dto.ToolCallRequest
+	if len(req.Tools) > 0 {
+		var rawTools []map[string]any
+		if err := common.Unmarshal(req.Tools, &rawTools); err == nil {
+			for _, t := range rawTools {
+				toolType, _ := t["type"].(string)
+				if toolType == "function" {
+					tool := dto.ToolCallRequest{
+						Type: "function",
+					}
+					if name, ok := t["name"].(string); ok {
+						tool.Function.Name = name
+					}
+					if desc, ok := t["description"].(string); ok {
+						tool.Function.Description = desc
+					}
+					if params, ok := t["parameters"]; ok {
+						tool.Function.Parameters = params
+					}
+					tools = append(tools, tool)
+				}
+			}
 		}
-		if resp.Usage.TotalTokens != 0 {
-			usage.TotalTokens = resp.Usage.TotalTokens
+	}
+
+	// Tool choice
+	var toolChoice any
+	if len(req.ToolChoice) > 0 {
+		var rawChoice map[string]any
+		if err := common.Unmarshal(req.ToolChoice, &rawChoice); err == nil {
+			if typeVal, ok := rawChoice["type"].(string); ok && typeVal == "function" {
+				if name, ok := rawChoice["name"].(string); ok {
+					toolChoice = map[string]any{
+						"type": "function",
+						"function": map[string]string{
+							"name": name,
+						},
+					}
+				}
+			} else {
+				toolChoice = string(req.ToolChoice)
+			}
 		} else {
-			usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
-		}
-		if resp.Usage.InputTokensDetails != nil {
-			usage.PromptTokensDetails.CachedTokens = resp.Usage.InputTokensDetails.CachedTokens
-			usage.PromptTokensDetails.ImageTokens = resp.Usage.InputTokensDetails.ImageTokens
-			usage.PromptTokensDetails.AudioTokens = resp.Usage.InputTokensDetails.AudioTokens
-		}
-		if resp.Usage.CompletionTokenDetails.ReasoningTokens != 0 {
-			usage.CompletionTokenDetails.ReasoningTokens = resp.Usage.CompletionTokenDetails.ReasoningTokens
-		}
-	}
-
-	created := resp.CreatedAt
-
-	var toolCalls []dto.ToolCallResponse
-	if text == "" && len(resp.Output) > 0 {
-		for _, out := range resp.Output {
-			if out.Type != "function_call" {
-				continue
+			var str string
+			if err := common.Unmarshal(req.ToolChoice, &str); err == nil {
+				toolChoice = str
+			} else {
+				toolChoice = string(req.ToolChoice)
 			}
-			name := strings.TrimSpace(out.Name)
-			if name == "" {
-				continue
-			}
-			callId := strings.TrimSpace(out.CallId)
-			if callId == "" {
-				callId = strings.TrimSpace(out.ID)
-			}
-			toolCalls = append(toolCalls, dto.ToolCallResponse{
-				ID:   callId,
-				Type: "function",
-				Function: dto.FunctionResponse{
-					Name:      name,
-					Arguments: out.ArgumentsString(),
-				},
-			})
 		}
 	}
 
-	finishReason := "stop"
-	if len(toolCalls) > 0 {
-		finishReason = "tool_calls"
+	// Max tokens
+	var maxTokens *uint
+	if req.MaxOutputTokens != nil {
+		maxTokens = lo.ToPtr(lo.FromPtr(req.MaxOutputTokens))
 	}
 
-	msg := dto.Message{
-		Role:    "assistant",
-		Content: text,
-	}
-	if len(toolCalls) > 0 {
-		msg.SetToolCalls(toolCalls)
-		msg.Content = ""
+	// Reasoning effort
+	var reasoningEffort string
+	if req.Reasoning != nil && req.Reasoning.Effort != "" {
+		reasoningEffort = req.Reasoning.Effort
 	}
 
-	out := &dto.OpenAITextResponse{
-		Id:      id,
-		Object:  "chat.completion",
-		Created: created,
-		Model:   resp.Model,
-		Choices: []dto.OpenAITextResponseChoice{
-			{
-				Index:        0,
-				Message:      msg,
-				FinishReason: finishReason,
-			},
-		},
-		Usage: *usage,
+	// Build the chat request
+	out := &dto.GeneralOpenAIRequest{
+		Model:           req.Model,
+		Messages:        messages,
+		Stream:          lo.ToPtr(lo.FromPtrOr(req.Stream, false)),
+		MaxTokens:       maxTokens,
+		Temperature:     req.Temperature,
+		TopP:            req.TopP,
+		Tools:           tools,
+		ToolChoice:      toolChoice,
+		User:            req.User,
+		Metadata:        req.Metadata,
+		Store:           req.Store,
+		ReasoningEffort: reasoningEffort,
 	}
 
-	return out, usage, nil
+	// Text format (response_format)
+	if len(req.Text) > 0 {
+		var textConfig map[string]any
+		if err := common.Unmarshal(req.Text, &textConfig); err == nil {
+			if format, ok := textConfig["format"].(map[string]any); ok {
+				if formatType, ok := format["type"].(string); ok {
+					out.ResponseFormat = &dto.ResponseFormat{
+						Type: formatType,
+					}
+				}
+			}
+		}
+	}
+
+	return out, nil
 }
 
-func ExtractOutputTextFromResponses(resp *dto.OpenAIResponsesResponse) string {
-	if resp == nil || len(resp.Output) == 0 {
+// parseResponsesInput converts Responses API input items into chat messages.
+func parseResponsesInput(input []byte) []dto.Message {
+	if len(input) == 0 {
+		return nil
+	}
+
+	var messages []dto.Message
+
+	// Try parsing as array of typed items
+	var items []map[string]any
+	if err := common.Unmarshal(input, &items); err != nil {
+		// Try as plain string
+		var str string
+		if err := common.Unmarshal(input, &str); err == nil && strings.TrimSpace(str) != "" {
+			msg := dto.Message{Role: "user"}
+			msg.SetStringContent(str)
+			messages = append(messages, msg)
+		}
+		return messages
+	}
+
+	var currentToolCalls []dto.ToolCallRequest
+
+	for _, item := range items {
+		itemType, _ := item["type"].(string)
+
+		switch itemType {
+		case "message":
+			role, _ := item["role"].(string)
+			content := extractContentString(item["content"])
+
+			msg := dto.Message{Role: role}
+			msg.SetStringContent(content)
+			messages = append(messages, msg)
+
+		case "function_call":
+			callID, _ := item["call_id"].(string)
+			name, _ := item["name"].(string)
+			args, _ := item["arguments"].(string)
+
+			if callID != "" && name != "" {
+				currentToolCalls = append(currentToolCalls, dto.ToolCallRequest{
+					ID:   callID,
+					Type: "function",
+					Function: dto.FunctionRequest{
+						Name:      name,
+						Arguments: args,
+					},
+				})
+			}
+
+		case "function_call_output":
+			// Flush pending tool calls to last assistant message
+			if len(currentToolCalls) > 0 && len(messages) > 0 {
+				lastMsg := &messages[len(messages)-1]
+				if lastMsg.Role == "assistant" {
+					lastMsg.SetToolCalls(currentToolCalls)
+				}
+				currentToolCalls = nil
+			}
+
+			callID, _ := item["call_id"].(string)
+			output, _ := item["output"].(string)
+			msg := dto.Message{
+				Role:       "tool",
+				ToolCallId: callID,
+			}
+			msg.SetStringContent(output)
+			messages = append(messages, msg)
+
+		case "input_text":
+			text, _ := item["text"].(string)
+			msg := dto.Message{Role: "user"}
+			msg.SetStringContent(text)
+			messages = append(messages, msg)
+
+		case "output_text":
+			text, _ := item["text"].(string)
+			if len(messages) > 0 && messages[len(messages)-1].Role == "assistant" {
+				lastMsg := &messages[len(messages)-1]
+				if lastMsg.IsStringContent() {
+					existing := lastMsg.StringContent()
+					if existing != "" {
+						lastMsg.SetStringContent(existing + "\n" + text)
+					} else {
+						lastMsg.SetStringContent(text)
+					}
+				}
+			} else {
+				msg := dto.Message{Role: "assistant"}
+				msg.SetStringContent(text)
+				messages = append(messages, msg)
+			}
+		}
+	}
+
+	// Flush remaining tool calls
+	if len(currentToolCalls) > 0 && len(messages) > 0 {
+		lastMsg := &messages[len(messages)-1]
+		if lastMsg.Role == "assistant" {
+			lastMsg.SetToolCalls(currentToolCalls)
+		}
+	}
+
+	return messages
+}
+
+// extractContentString extracts a string representation from content
+// which can be a string, array of content parts, or nil.
+func extractContentString(content any) string {
+	if content == nil {
 		return ""
 	}
 
-	var sb strings.Builder
+	switch v := content.(type) {
+	case string:
+		return v
+	case []any:
+		var textParts []string
+		for _, part := range v {
+			if m, ok := part.(map[string]any); ok {
+				typeVal, _ := m["type"].(string)
+				switch typeVal {
+				case "input_text", "text":
+					if text, ok := m["text"].(string); ok {
+						textParts = append(textParts, text)
+					}
+				}
+			}
+		}
+		return strings.Join(textParts, "\n")
+	}
 
-	// Prefer assistant message outputs.
-	for _, out := range resp.Output {
-		if out.Type != "message" {
-			continue
-		}
-		if out.Role != "" && out.Role != "assistant" {
-			continue
-		}
-		for _, c := range out.Content {
-			if c.Type == "output_text" && c.Text != "" {
-				sb.WriteString(c.Text)
-			}
-		}
-	}
-	if sb.Len() > 0 {
-		return sb.String()
-	}
-	for _, out := range resp.Output {
-		for _, c := range out.Content {
-			if c.Text != "" {
-				sb.WriteString(c.Text)
-			}
-		}
-	}
-	return sb.String()
+	return fmt.Sprintf("%v", content)
 }
